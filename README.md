@@ -16,9 +16,9 @@ From this, the optimal execution order is:
 
 To achieve this, this example uses a trivial queue of callbacks containing all the phase 2 code. Handlers add their phase 2 code to that queue as they are executed, then all the collected phase 2 code is executed at once.
 
-Dependencies: Node.js v16 or newer, Git, Docker.
-
 ## Quickstart
+
+Dependencies: Node.js v16 or newer, Git, Docker.
 
 ```bash
 # 0. Install @subsquid/cli a.k.a. the sqd command globally
