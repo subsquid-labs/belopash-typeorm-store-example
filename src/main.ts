@@ -40,8 +40,8 @@ async function handleTransfer(mctx: MappingContext, block: Block, log: Log) {
     const deferredFromAccount = mctx.store.defer(Account, from)
     const deferredToAccount = mctx.store.defer(Account, to)
     mctx.queue.push(async () => {
-        const fromAccount = await deferredFromAccount.getOrCreate(createNewAccount)
-        const toAccount = await deferredToAccount.getOrCreate(createNewAccount)
+        const fromAccount = await deferredFromAccount.getOrInsert(createNewAccount)
+        const toAccount = await deferredToAccount.getOrInsert(createNewAccount)
         fromAccount.balance -= value
         toAccount.balance += value
         await mctx.store.upsert(fromAccount)
