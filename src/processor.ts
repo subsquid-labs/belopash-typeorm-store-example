@@ -9,35 +9,28 @@ import {
     Transaction as _Transaction,
 } from '@subsquid/evm-processor'
 
+export const ETH_USDC_ADDRESS = '0x7EA2be2df7BA6E54B1A9C70676f668455E329d29'.toLowerCase()
+
 export const processor = new EvmBatchProcessor()
-    .setDataSource({
-        // Lookup archive by the network name in Subsquid registry
-        // See https://docs.subsquid.io/evm-indexing/supported-networks/
-        archive: lookupArchive('eth-mainnet'),
-        // Chain RPC endpoint is required for
-        //  - indexing unfinalized blocks https://docs.subsquid.io/basics/unfinalized-blocks/
-        //  - querying the contract state https://docs.subsquid.io/evm-indexing/query-state/
-        chain: {
-            // Set the URL via .env for local runs or via secrets when deploying to Subsquid Cloud
-            // https://docs.subsquid.io/deploy-squid/env-variables/
-            url: assertNotNull(process.env.RPC_ENDPOINT),
-            // More RPC connection options at https://docs.subsquid.io/evm-indexing/configuration/initialization/#set-data-source
-            rateLimit: 10
-        }
+    .setGateway({
+        url: lookupArchive('eth-mainnet'),
+        requestTimeout: 10000
+    })
+    .setRpcEndpoint({
+        url: assertNotNull(process.env.RPC_ENDPOINT),
+        rateLimit: 10
     })
     .setFinalityConfirmation(75)
     .setFields({
-        transaction: {
-            from: true,
-            value: true,
-            hash: true,
-        },
+        log: {
+            transactionHash: true
+        }
     })
     .setBlockRange({
-        from: 0,
+        from: 12740001
     })
-    .addTransaction({
-        to: ['0x0000000000000000000000000000000000000000'],
+    .addLog({
+        address: [ETH_USDC_ADDRESS]
     })
 
 export type Fields = EvmBatchProcessorFields<typeof processor>

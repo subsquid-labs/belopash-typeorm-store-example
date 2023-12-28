@@ -1,29 +1,66 @@
-import {TypeormDatabase} from '@subsquid/typeorm-store'
-import {Burn} from './model'
-import {processor} from './processor'
+import {TypeormDatabaseWithCache, StoreWithCache} from '@belopash/typeorm-store'
+import {
+    processor,
+    ProcessorContext,
+    Log,
+    Block,
+    ETH_USDC_ADDRESS
+} from './processor'
+import * as erc20abi from './abi/erc20'
+import {Account, Transfer} from './model'
 
-processor.run(new TypeormDatabase({supportHotBlocks: true}), async (ctx) => {
-    const burns: Burn[] = []
-    for (let c of ctx.blocks) {
-        for (let tx of c.transactions) {
-            // decode and normalize the tx data
-            burns.push(
-                new Burn({
-                    id: tx.id,
-                    block: c.header.height,
-                    address: tx.from,
-                    value: tx.value,
-                    txHash: tx.hash,
-                })
-            )
+type Task = () => Promise<void>
+type MappingContext = ProcessorContext<StoreWithCache> & { queue: Task[] }
+
+processor.run(new TypeormDatabaseWithCache({supportHotBlocks: true}), async (ctx) => {
+    const mctx: MappingContext = {
+        ...ctx,
+        queue: []
+    }
+
+    for (let block of ctx.blocks) {
+        for (let log of block.logs) {
+            if (log.address===ETH_USDC_ADDRESS) {
+                if (log.topics[0]===erc20abi.events.Transfer.topic) {
+                    await handleTransfer(mctx, block.header, log)
+                }
+            }
         }
     }
-    // apply vectorized transformations and aggregations
-    const burned = burns.reduce((acc, b) => acc + b.value, 0n) / 1_000_000_000n
-    const startBlock = ctx.blocks.at(0)?.header.height
-    const endBlock = ctx.blocks.at(-1)?.header.height
-    ctx.log.info(`Burned ${burned} Gwei from ${startBlock} to ${endBlock}`)
 
-    // upsert batches of entities with batch-optimized ctx.store.save
-    await ctx.store.upsert(burns)
+    // do I need to run ctx.store.commit() here?
+
+    for (let task of mctx.queue) {
+        await task()
+    }
 })
+
+async function handleTransfer(mctx: MappingContext, block: Block, log: Log) {
+    let {from, to, value} = erc20abi.events.Transfer.decode(log)
+    const deferredFromAccount = mctx.store.defer(Account, from)
+    const deferredToAccount = mctx.store.defer(Account, to)
+    mctx.queue.push(async () => {
+        const fromAccount = await deferredFromAccount.getOrCreate(createNewAccount)
+        const toAccount = await deferredToAccount.getOrCreate(createNewAccount)
+        fromAccount.balance -= value
+        toAccount.balance += value
+        await mctx.store.upsert(fromAccount)
+        await mctx.store.upsert(toAccount)
+        await mctx.store.insert(new Transfer({
+            id: log.id,
+            block: block.height,
+            hash: log.transactionHash,
+            value,
+            from: fromAccount,
+            to: toAccount
+        }))
+    })
+}
+
+function createNewAccount(address: string) {
+    return new Account({
+        id: address,
+        address,
+        balance: 0n
+    })
+}

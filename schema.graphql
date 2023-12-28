@@ -1,7 +1,16 @@
-type Burn @entity {
+type Account @entity {
   id: ID!
-  block: Int!
   address: String! @index
+  balance: BigInt!
+  inboundTransfers: [Transfer] @derivedFrom(field: "to")
+  outboundTransfers: [Transfer] @derivedFrom(field: "from")
+}
+
+type Transfer @entity {
+  id: ID!
+  block: Int! @index
+  hash: String! @index
   value: BigInt!
-  txHash: String!
+  from: Account
+  to: Account
 }
