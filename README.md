@@ -16,6 +16,19 @@ From this, the optimal execution order is:
 
 To achieve this, this example uses a trivial queue of callbacks containing all the phase 2 code. Handlers add their phase 2 code to that queue as they are executed, then all the collected phase 2 code is executed at once.
 
+## Manual controls
+
+### Execution of batched requests
+
+Call `ctx.store.commit()` to execute any pending database requests.
+
+### Caching
+
+By default, all entity instances resulting from reads and slated for writes are kept in the memory for fast retrieval upon request (by `.get`/`.getOrCreate`/`.getOrFail`). In some cases that can cause the store to consume too much RAM. You can work around that by controlling the cache manually with
+
+* `ctx.store.clear()` - drops all entity instances cached in RAM
+* `ctx.store.flush()` is a `ctx.store.commit()` followed by `ctx.store.clear()`
+
 ## Quickstart
 
 Dependencies: Node.js v16 or newer, Git, Docker.
