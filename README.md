@@ -5,9 +5,9 @@ A simple squid illustrating the usage of the `@belopash/typeorm-store` package w
 Effective batching of reads requires that the handlers are split into two distinct phases:
 
 * **Phase 1:** Deferred requests for all the required entity instances are made with `ctx.store.defer`.
-* **Phase 2:** The entity instances are retrieved via `.get`/`.getOrCreate`/`.getOrFail` methods of the deferred requests, updated as necessary and saved.
+* **Phase 2:** The entity instances are retrieved via `.get`/`.getOrInsert`/`.getOrFail` methods of the deferred requests, updated as necessary and saved.
 
-Read requests are batched in-memory as the `ctx.store.defer` calls are made, then the batches are executed upon calls to `.get`/`.getOrCreate`/`.getOrFail`. Write requests are batched in-memory upon calls to `ctx.store.insert`/`ctx.store.upsert`; their batches are executed internally by the store after each execution of the [blocks batch handler](https://docs.subsquid.io/sdk/reference/processors/architecture/#processorrun).
+Read requests are batched in-memory as the `ctx.store.defer` calls are made, then the batches are executed upon calls to `.get`/`.getOrInsert`/`.getOrFail`. Write requests are batched in-memory upon calls to `ctx.store.insert`/`ctx.store.upsert`; their batches are normally executed internally by the store after each execution of the [blocks batch handler](https://docs.subsquid.io/sdk/reference/processors/architecture/#processorrun).
 
 From this, the optimal execution order is:
 
@@ -16,15 +16,17 @@ From this, the optimal execution order is:
 
 To achieve this, this example uses a trivial queue of callbacks containing all the phase 2 code. Handlers add their phase 2 code to that queue as they are executed, then all the collected phase 2 code is executed at once.
 
+It is possible to minimize cache misses by calling phase 2 callbacks is the right order. E.g. some entity records are `insert`ed and later looked up with `get`, they will be retrieved from RAM without accessing the DB. Write your own intelligent queue to ensure the execution of phase 2 code in the optimal order.
+
 ## Manual controls
 
 ### Execution of batched requests
 
-Call `ctx.store.commit()` to execute any pending database requests.
+Call `ctx.store.commit()` to execute any pending database requests. Note that this will send the requests to the database as a part of the current [transaction](https://www.postgresql.org/docs/current/tutorial-transactions.html), but not actually execute `COMMIT`; this will be done automatically after the whole [blocks batch handler](https://docs.subsquid.io/sdk/reference/processors/architecture/#processorrun) finishes its execution.
 
 ### Caching
 
-By default, all entity instances resulting from reads and slated for writes are kept in the memory for fast retrieval upon request (by `.get`/`.getOrCreate`/`.getOrFail`). In some cases that can cause the store to consume too much RAM. You can work around that by controlling the cache manually with
+By default, all entity instances resulting from reads and slated for writes are kept in the memory for fast retrieval upon request (by `.get`/`.getOrInsert`/`.getOrFail`). In some cases that can cause the store to consume too much RAM. You can work around that by controlling the cache manually with
 
 * `ctx.store.clear()` - drops all entity instances cached in RAM
 * `ctx.store.flush()` is a `ctx.store.commit()` followed by `ctx.store.clear()`
