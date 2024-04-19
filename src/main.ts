@@ -28,8 +28,6 @@ processor.run(new TypeormDatabaseWithCache({supportHotBlocks: true}), async (ctx
         }
     }
 
-    // do I need to run ctx.store.commit() here? for best performance
-
     for (let task of mctx.queue) {
         await task()
     }
