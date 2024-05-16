@@ -5,7 +5,7 @@ A simple squid illustrating the usage of the `@belopash/typeorm-store` package w
 Effective batching of reads requires that the handlers are split into two distinct phases:
 
 * **Phase 1:** Deferred requests for all the required entity instances are made with `ctx.store.defer`.
-* **Phase 2:** The entity instances are retrieved via `.get`/`.getOrInsert`/`.getOrFail` methods of the deferred requests, updated as necessary and saved.
+* **Phase 2:** The entity instances are retrieved via `.get`/`.getOrInsert`/`.getOrFail` methods of the store, updated as necessary and saved.
 
 Read requests are batched in-memory as the `ctx.store.defer` calls are made, then the batches are executed upon calls to `.get`/`.getOrInsert`/`.getOrFail`. Write requests are batched in-memory upon calls to `ctx.store.insert`/`ctx.store.upsert`; their batches are normally executed internally by the store after each execution of the [blocks batch handler](https://docs.subsquid.io/sdk/reference/processors/architecture/#processorrun).
 
