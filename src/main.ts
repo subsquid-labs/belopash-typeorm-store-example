@@ -35,11 +35,11 @@ processor.run(new TypeormDatabaseWithCache({supportHotBlocks: true}), async (ctx
 
 async function handleTransfer(mctx: MappingContext, block: Block, log: Log) {
     let {from, to, value} = erc20abi.events.Transfer.decode(log)
-    const deferredFromAccount = mctx.store.defer(Account, from)
-    const deferredToAccount = mctx.store.defer(Account, to)
+    mctx.store.defer(Account, from)
+    mctx.store.defer(Account, to)
     mctx.queue.push(async () => {
-        const fromAccount = await deferredFromAccount.getOrInsert(createNewAccount)
-        const toAccount = await deferredToAccount.getOrInsert(createNewAccount)
+        const fromAccount = await mctx.store.getOrInsert(Account, from, createNewAccount)
+        const toAccount = await mctx.store.getOrInsert(Account, to, createNewAccount)
         fromAccount.balance -= value
         toAccount.balance += value
         await mctx.store.upsert(fromAccount)

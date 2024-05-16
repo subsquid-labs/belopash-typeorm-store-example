@@ -1,5 +1,4 @@
 import {assertNotNull} from '@subsquid/util-internal'
-import {lookupArchive} from '@subsquid/archive-registry'
 import {
     BlockHeader,
     DataHandlerContext,
@@ -13,7 +12,7 @@ export const ETH_USDC_ADDRESS = '0x7EA2be2df7BA6E54B1A9C70676f668455E329d29'.toL
 
 export const processor = new EvmBatchProcessor()
     .setGateway({
-        url: lookupArchive('eth-mainnet'),
+        url: 'https://v2.archive.subsquid.io/network/ethereum-mainnet',
         requestTimeout: 10000
     })
     .setRpcEndpoint({
