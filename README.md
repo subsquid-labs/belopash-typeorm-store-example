@@ -1,13 +1,13 @@
 # Minimal `@belopash/typeorm-store` example
 
-A simple squid illustrating the usage of the `@belopash/typeorm-store` package with [Squid SDK](https://docs.subsquid.io/sdk/). This [custom store](https://docs.subsquid.io/sdk/resources/persisting-data/overview) batches both read and write database requests under the hood, allowing for [batch processing](https://docs.subsquid.io/sdk/resources/basics/batch-processing) in a handler-based architecture.
+A simple squid illustrating the usage of the `@belopash/typeorm-store` package with [Squid SDK](https://docs.sqd.dev/en/sdk). This [custom store](https://docs.sqd.dev/en/sdk) batches both read and write database requests under the hood, allowing for [batch processing](https://docs.sqd.dev/en/sdk) in a handler-based architecture.
 
 Effective batching of reads requires that the handlers are split into two distinct phases:
 
 * **Phase 1:** Deferred requests for all the required entity instances are made with `ctx.store.defer`.
 * **Phase 2:** The entity instances are retrieved via `.get`/`.getOrInsert`/`.getOrFail` methods of the store, updated as necessary and saved.
 
-Read requests are batched in-memory as the `ctx.store.defer` calls are made, then the batches are executed upon calls to `.get`/`.getOrInsert`/`.getOrFail`. Write requests are batched in-memory upon calls to `ctx.store.insert`/`ctx.store.upsert`; their batches are normally executed internally by the store after each execution of the [blocks batch handler](https://docs.subsquid.io/sdk/reference/processors/architecture/#processorrun).
+Read requests are batched in-memory as the `ctx.store.defer` calls are made, then the batches are executed upon calls to `.get`/`.getOrInsert`/`.getOrFail`. Write requests are batched in-memory upon calls to `ctx.store.insert`/`ctx.store.upsert`; their batches are normally executed internally by the store after each execution of the [blocks batch handler](https://docs.sqd.dev/en/sdk).
 
 From this, the optimal execution order is:
 
@@ -22,7 +22,7 @@ It is possible to minimize cache misses by calling phase 2 callbacks is the righ
 
 ### Execution of batched requests
 
-Call `ctx.store.commit()` to execute any pending database requests. Note that this will send the requests to the database as a part of the current [transaction](https://www.postgresql.org/docs/current/tutorial-transactions.html), but not actually execute `COMMIT`; this will be done automatically after the whole [blocks batch handler](https://docs.subsquid.io/sdk/reference/processors/architecture/#processorrun) finishes its execution.
+Call `ctx.store.commit()` to execute any pending database requests. Note that this will send the requests to the database as a part of the current [transaction](https://www.postgresql.org/docs/current/tutorial-transactions.html), but not actually execute `COMMIT`; this will be done automatically after the whole [blocks batch handler](https://docs.sqd.dev/en/sdk) finishes its execution.
 
 ### Caching
 
